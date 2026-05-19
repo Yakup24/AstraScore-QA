@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:sc="http://example.com/scoring">
+  <soapenv:Header/>
+  <soapenv:Body>
+    <sc:RealtimeScoringRequest>
+      <transactionId>{{transaction_id}}</transactionId>
+      <customerId>{{customer_id}}</customerId>
+      <msisdn>{{msisdn}}</msisdn>
+      <modelCode>{{model_code}}</modelCode>
+      <channel>{{channel}}</channel>
+      <amount>{{amount}}</amount>
+    </sc:RealtimeScoringRequest>
+  </soapenv:Body>
+</soapenv:Envelope>

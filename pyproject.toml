@@ -1,0 +1,74 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "astrascore-qa"
+version = "2.1.0"
+description = "Enterprise-grade scoring service test automation for SOAP, REST, DB, regression, and observability validation."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+  { name = "Yakup24" }
+]
+keywords = [
+  "test-automation",
+  "scoring",
+  "qa",
+  "soap",
+  "rest",
+  "banking",
+  "devsecops",
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Framework :: Pytest",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Software Development :: Testing",
+]
+dependencies = [
+  "requests==2.34.2",
+  "PyYAML==6.0.3",
+  "defusedxml==0.7.1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest==9.0.3",
+  "pytest-html==4.2.0",
+  "ruff==0.15.13",
+  "bandit[toml]==1.9.4",
+  "pip-audit==2.10.0",
+  "detect-secrets==1.5.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+src = ["src", "mock_service", "scripts", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S"]
+ignore = [
+  "S101",
+  "S104",
+  "S110",
+  "S603",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101", "S105", "S106"]
+"mock_service/server.py" = ["S104"]
+
+[tool.bandit]
+exclude_dirs = ["tests", ".venv", "reports", "data", "logs"]
+skips = ["B101", "B104"]

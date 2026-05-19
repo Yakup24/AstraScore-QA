@@ -1,0 +1,18 @@
+{
+  "batchId": "BATCH-REGRESSION-001",
+  "modelCode": "CREDIT_RISK_V1",
+  "records": [
+    {
+      "customerId": "C1001",
+      "amount": 1500
+    },
+    {
+      "customerId": "C1002",
+      "amount": 3200
+    },
+    {
+      "customerId": "C1003",
+      "amount": 9800
+    }
+  ]
+}

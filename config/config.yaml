@@ -1,0 +1,32 @@
+﻿service:
+  base_url: "http://127.0.0.1:8089"
+  health_path: "/health"
+  soap_realtime_path: "/soap/realtime-scoring"
+  rest_batch_path: "/api/v1/batch-scoring"
+
+database:
+  type: "sqlite"
+  sqlite_path: "data/scoring.db"
+
+logging:
+  log_file: "logs/astrascore_qa.log"
+
+timeouts:
+  connect_seconds: 3
+  read_seconds: 10
+
+http:
+  retries: 2
+  retry_backoff_seconds: 0.1
+
+observability:
+  correlation_header: "X-Correlation-ID"
+  metrics_path: "/metrics"
+
+model:
+  default_model_code: "CREDIT_RISK_V1"
+  accepted_decisions:
+    - "APPROVE"
+    - "REVIEW"
+    - "REJECT"
+
