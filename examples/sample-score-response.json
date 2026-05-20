@@ -1,0 +1,11 @@
+{
+  "applicantId": "demo-applicant-001",
+  "score": 742,
+  "decision": "approved",
+  "riskBand": "low",
+  "reasonCodes": [
+    "stable_income",
+    "acceptable_debt_ratio",
+    "sufficient_credit_history"
+  ]
+}

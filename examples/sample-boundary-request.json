@@ -1,0 +1,9 @@
+{
+  "applicantId": "demo-boundary-001",
+  "age": 18,
+  "monthlyIncome": 0,
+  "employmentStatus": "student",
+  "requestedAmount": 1,
+  "existingDebt": 0,
+  "creditHistoryMonths": 0
+}

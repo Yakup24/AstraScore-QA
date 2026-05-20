@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "astrascore-qa"
-version = "2.1.0"
-description = "Enterprise-grade scoring service test automation for SOAP, REST, DB, regression, and observability validation."
+version = "2.2.0"
+description = "Enterprise scoring validation framework for API contracts, synthetic baselines, regression checks, and CI quality gates."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }

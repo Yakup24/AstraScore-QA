@@ -1,0 +1,19 @@
+{
+  "suite": "scoring-regression",
+  "environment": "demo",
+  "summary": {
+    "total": 5,
+    "passed": 4,
+    "failed": 1,
+    "skipped": 0
+  },
+  "failures": [
+    {
+      "caseId": "baseline-high-risk-001",
+      "reason": "actual score exceeded allowed tolerance",
+      "expectedScore": 518,
+      "actualScore": 531,
+      "tolerance": 5
+    }
+  ]
+}

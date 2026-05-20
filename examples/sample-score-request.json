@@ -1,0 +1,9 @@
+{
+  "applicantId": "demo-applicant-001",
+  "age": 32,
+  "monthlyIncome": 45000,
+  "employmentStatus": "full_time",
+  "requestedAmount": 120000,
+  "existingDebt": 15000,
+  "creditHistoryMonths": 48
+}

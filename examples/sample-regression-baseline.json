@@ -1,0 +1,17 @@
+{
+  "baselineVersion": "v0.1.0",
+  "cases": [
+    {
+      "caseId": "baseline-low-risk-001",
+      "expectedScore": 742,
+      "tolerance": 5,
+      "expectedDecision": "approved"
+    },
+    {
+      "caseId": "baseline-high-risk-001",
+      "expectedScore": 518,
+      "tolerance": 5,
+      "expectedDecision": "review"
+    }
+  ]
+}

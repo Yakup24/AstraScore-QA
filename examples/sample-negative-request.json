@@ -1,0 +1,9 @@
+{
+  "applicantId": "",
+  "age": 17,
+  "monthlyIncome": -1,
+  "employmentStatus": "unknown_status",
+  "requestedAmount": -5000,
+  "existingDebt": -100,
+  "creditHistoryMonths": -3
+}

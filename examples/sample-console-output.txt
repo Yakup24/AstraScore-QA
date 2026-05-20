@@ -1,0 +1,19 @@
+AstraScore QA - Demo Execution
+
+Suite: scoring-regression
+Environment: demo
+Data policy: synthetic-only
+
+[PASS] CONTRACT-001 - Score response contains required fields
+[PASS] NEGATIVE-001 - Missing income returns validation error
+[PASS] BOUNDARY-001 - Minimum age boundary handled correctly
+[FAIL] REGRESSION-001 - Score exceeded baseline tolerance
+
+Summary:
+Total: 4
+Passed: 3
+Failed: 1
+Skipped: 0
+
+Report:
+reports/latest/scoring-report.json

@@ -1,57 +1,101 @@
 # Architecture
 
-AstraScore QA models the QA side of an enterprise scoring landscape.
+AstraScore QA models the QA side of an enterprise scoring or decision-engine platform. It validates service contracts, scoring outputs, data persistence, regression risk, and report generation using synthetic data.
 
-## Logical Flow
+## High-Level Architecture
 
 ```text
-Business App / Channel
-  -> SOAP real-time scoring
-  -> REST batch scoring
-  -> Score output persistence
-  -> Database and model baseline validation
-  -> Reports and CI evidence
+User / CI Pipeline
+  -> Pytest Runner
+  -> Test Data Loader
+  -> API Client
+  -> Mock or Target Scoring Service
+  -> Response Validator
+  -> Regression Comparator
+  -> Report Writer
+  -> JSON / HTML / CI Output
 ```
 
-## Demo Mapping
+## Component Responsibilities
 
-| Enterprise Component | AstraScore QA Demo |
+| Component | Responsibility |
 | --- | --- |
-| Scoring Proxy / SOAP | `/soap/realtime-scoring` |
-| Batch Scoring API | `/api/v1/batch-scoring` |
-| DWH / Exadata output | SQLite `realtime_results` and `batch_results` |
-| Model Repository | SQLite `model_baseline` |
-| Observability | correlation id, log file, `/metrics` |
-| Test Automation | pytest suite |
-| CI Evidence | HTML report, JSON summary, Actions artifacts |
+| Pytest Runner | Discovers and executes smoke, contract, regression, negative, boundary, DB, and report tests. |
+| Test Data Loader | Loads synthetic XML, JSON, SQL, and baseline fixtures from `testdata/` and `examples/`. |
+| API Client | Sends HTTP requests with timeout and retry/backoff handling. |
+| Mock Scoring Service | Provides local SOAP and REST endpoints with deterministic scoring behavior. |
+| Response Validator | Checks required fields, score types, decision values, and payload structure. |
+| Regression Comparator | Compares actual score and decision outputs with reviewed synthetic baselines. |
+| Report Writer | Creates JSON report payloads for audit-friendly test evidence. |
 
-## Core Modules
+## Test Execution Lifecycle
 
-- `src/astrascore_qa/config.py`: config loading, environment overrides, validation
-- `src/astrascore_qa/http_client.py`: retry/backoff HTTP client
-- `src/astrascore_qa/contracts.py`: reusable response contract assertions
-- `src/astrascore_qa/db.py`: replaceable SQLite demo adapter
-- `src/astrascore_qa/soap.py`: SOAP rendering and parsing helpers
-- `mock_service/server.py`: local scoring mock service
+1. Pytest starts a temporary runtime directory.
+2. SQLite demo tables and baseline records are initialized.
+3. Mock service starts on a free local port.
+4. Tests load synthetic request data.
+5. The HTTP client calls the mock SOAP or REST endpoint.
+6. Assertions validate HTTP status, response shape, scoring output, DB output, logs, and metrics.
+7. Regression tests compare actual score behavior with deterministic baselines.
+8. Session hooks write `reports/test_summary.json`.
+9. Optional pytest-html output writes `reports/report.html`.
 
-## Production Adaptation Points
+## Data Flow
 
-1. Replace mock endpoints with integration environment URLs.
-2. Replace SQLite with the target RDBMS, DWH, or query layer adapter.
-3. Version model baselines as reviewed test assets.
-4. Inject secrets through CI secrets or a vault.
-5. Keep test reports as audit artifacts.
-
-## Suggested Pipeline
+Real-time flow:
 
 ```text
-Commit
-  -> Ruff lint
-  -> Unit and integration-style mock tests
-  -> CodeQL
-  -> Bandit
-  -> pip-audit
-  -> Gitleaks
-  -> HTML and JSON reports
-  -> Artifact retention
+Synthetic SOAP XML
+  -> HTTP Client
+  -> Mock SOAP Endpoint
+  -> Deterministic Score Logic
+  -> realtime_results table
+  -> SOAP Response
+  -> Contract and DB Assertions
+```
+
+Batch flow:
+
+```text
+Synthetic Batch JSON
+  -> HTTP Client
+  -> Mock REST Endpoint
+  -> Deterministic Score Logic
+  -> batch_results table
+  -> Batch Result Endpoint
+  -> Contract, Count, DB, and Regression Assertions
+```
+
+## Error Handling
+
+The mock service returns stable error codes for invalid REST payloads, including:
+
+- `INVALID_JSON`
+- `INVALID_PAYLOAD`
+- `MISSING_BATCH_ID`
+- `INVALID_MODEL_CODE`
+- `INVALID_RECORDS`
+- `EMPTY_RECORDS`
+- `INVALID_RECORD`
+- `MISSING_CUSTOMER_ID`
+- `INVALID_AMOUNT`
+
+SOAP negative scenarios return SOAP faults with safe XML escaping.
+
+## Mock Service Usage
+
+The mock service is intended for local and CI execution. It avoids real endpoints, real customer data, and external dependencies. It should be replaced or configured through `SCORING_BASE_URL` when testing a controlled integration environment.
+
+## Report Generation Flow
+
+```text
+Pytest Result Hook
+  -> Test Outcome Collection
+  -> Summary Counts
+  -> reports/test_summary.json
+
+Standalone Report Writer
+  -> ReportCaseResult list
+  -> build_report()
+  -> write_json_report()
 ```
