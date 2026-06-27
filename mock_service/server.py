@@ -94,23 +94,23 @@ def _valid_correlation_id(value: str | None) -> str | None:
 class ScoringRequestHandler(BaseHTTPRequestHandler):
     server_version = "AstraScoreQAMock/2.1"
 
-    def _send_json(self, status: int, payload: dict[str, Any], correlation_id: str | None = None) -> None:
+    def _send_json(self, status: int, payload: dict[str, Any]) -> None:
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
-        if correlation_id:
-            self.send_header(CORRELATION_ID_HEADER, correlation_id)
+        correlation_id = self._correlation_id().replace("\r", "").replace("\n", "")
+        self.send_header(CORRELATION_ID_HEADER, correlation_id)
         self.end_headers()
         self.wfile.write(body)
 
-    def _send_xml(self, status: int, body: str, correlation_id: str | None = None) -> None:
+    def _send_xml(self, status: int, body: str) -> None:
         encoded = body.encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "text/xml; charset=utf-8")
         self.send_header("Content-Length", str(len(encoded)))
-        if correlation_id:
-            self.send_header(CORRELATION_ID_HEADER, correlation_id)
+        correlation_id = self._correlation_id().replace("\r", "").replace("\n", "")
+        self.send_header(CORRELATION_ID_HEADER, correlation_id)
         self.end_headers()
         self.wfile.write(encoded)
 
@@ -119,7 +119,12 @@ class ScoringRequestHandler(BaseHTTPRequestHandler):
         return self.rfile.read(content_length)
 
     def _correlation_id(self) -> str:
-        return _valid_correlation_id(self.headers.get(CORRELATION_ID_HEADER)) or _new_correlation_id()
+        correlation_id = getattr(self, "_cached_correlation_id", None)
+        if isinstance(correlation_id, str):
+            return correlation_id
+        correlation_id = _valid_correlation_id(self.headers.get(CORRELATION_ID_HEADER)) or _new_correlation_id()
+        self._cached_correlation_id = correlation_id
+        return correlation_id
 
     @property
     def db_path(self) -> Path:
@@ -139,9 +144,8 @@ class ScoringRequestHandler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:  # noqa: N802 - required by BaseHTTPRequestHandler
         parsed = urlparse(self.path)
-        correlation_id = self._correlation_id()
         if parsed.path == "/health":
-            self._send_json(200, {"status": "UP", "service": "astrascore-qa-mock"}, correlation_id)
+            self._send_json(200, {"status": "UP", "service": "astrascore-qa-mock"})
             return
 
         if parsed.path == "/metrics":
@@ -159,7 +163,6 @@ class ScoringRequestHandler(BaseHTTPRequestHandler):
                     "batchResultRows": batch_result_count,
                     "completedBatches": batch_count,
                 },
-                correlation_id,
             )
             return
 
@@ -182,11 +185,10 @@ class ScoringRequestHandler(BaseHTTPRequestHandler):
                     "status": "COMPLETED" if rows else "NOT_FOUND",
                     "results": [dict(row) for row in rows],
                 },
-                correlation_id,
             )
             return
 
-        self._send_json(404, {"error": "not_found", "path": parsed.path}, correlation_id)
+        self._send_json(404, {"error": "not_found", "path": parsed.path})
 
     def do_POST(self) -> None:  # noqa: N802 - required by BaseHTTPRequestHandler
         parsed = urlparse(self.path)
@@ -196,7 +198,7 @@ class ScoringRequestHandler(BaseHTTPRequestHandler):
         if parsed.path == "/api/v1/batch-scoring":
             self._handle_batch_scoring()
             return
-        self._send_json(404, {"error": "not_found", "path": parsed.path}, self._correlation_id())
+        self._send_json(404, {"error": "not_found", "path": parsed.path})
 
     def _handle_soap_realtime(self) -> None:
         correlation_id = self._correlation_id()
@@ -209,11 +211,11 @@ class ScoringRequestHandler(BaseHTTPRequestHandler):
             amount_text = _xml_text(raw_body, "amount") or "0"
             amount = float(amount_text)
         except Exception as exc:  # noqa: BLE001 - service fault simulation
-            self._send_xml(400, self._soap_fault(f"Invalid SOAP request: {exc}"), correlation_id)
+            self._send_xml(400, self._soap_fault(f"Invalid SOAP request: {exc}"))
             return
 
         if not transaction_id:
-            self._send_xml(400, self._soap_fault("transactionId is required"), correlation_id)
+            self._send_xml(400, self._soap_fault("transactionId is required"))
             return
 
         score = _stable_customer_score(customer_id, amount)
@@ -252,7 +254,7 @@ class ScoringRequestHandler(BaseHTTPRequestHandler):
     </sc:RealtimeScoringResponse>
   </soapenv:Body>
 </soapenv:Envelope>"""
-        self._send_xml(200, response, correlation_id)
+        self._send_xml(200, response)
 
     def _handle_batch_scoring(self) -> None:
         correlation_id = self._correlation_id()
@@ -263,7 +265,6 @@ class ScoringRequestHandler(BaseHTTPRequestHandler):
             self._send_json(
                 400,
                 {"status": "FAILED", "errorCode": "INVALID_JSON", "error": f"Invalid JSON request: {exc}"},
-                correlation_id,
             )
             return
 
@@ -271,7 +272,6 @@ class ScoringRequestHandler(BaseHTTPRequestHandler):
             self._send_json(
                 400,
                 {"status": "FAILED", "errorCode": "INVALID_PAYLOAD", "error": "payload must be a JSON object"},
-                correlation_id,
             )
             return
 
@@ -280,7 +280,6 @@ class ScoringRequestHandler(BaseHTTPRequestHandler):
             self._send_json(
                 400,
                 {"status": "FAILED", "errorCode": "MISSING_BATCH_ID", "error": "batchId is required"},
-                correlation_id,
             )
             return
 
@@ -289,7 +288,6 @@ class ScoringRequestHandler(BaseHTTPRequestHandler):
             self._send_json(
                 400,
                 {"status": "FAILED", "errorCode": "INVALID_MODEL_CODE", "error": "modelCode must be a string"},
-                correlation_id,
             )
             return
 
@@ -298,7 +296,6 @@ class ScoringRequestHandler(BaseHTTPRequestHandler):
             self._send_json(
                 400,
                 {"status": "FAILED", "errorCode": "INVALID_RECORDS", "error": "records must be a list"},
-                correlation_id,
             )
             return
 
@@ -306,7 +303,6 @@ class ScoringRequestHandler(BaseHTTPRequestHandler):
             self._send_json(
                 400,
                 {"status": "FAILED", "errorCode": "EMPTY_RECORDS", "error": "records cannot be empty"},
-                correlation_id,
             )
             return
 
@@ -320,7 +316,6 @@ class ScoringRequestHandler(BaseHTTPRequestHandler):
                         "errorCode": "INVALID_RECORD",
                         "error": f"records[{index}] must be a JSON object",
                     },
-                    correlation_id,
                 )
                 return
             customer_id = record.get("customerId")
@@ -332,7 +327,6 @@ class ScoringRequestHandler(BaseHTTPRequestHandler):
                         "errorCode": "MISSING_CUSTOMER_ID",
                         "error": f"records[{index}].customerId is required",
                     },
-                    correlation_id,
                 )
                 return
             try:
@@ -345,7 +339,6 @@ class ScoringRequestHandler(BaseHTTPRequestHandler):
                         "errorCode": "INVALID_AMOUNT",
                         "error": f"records[{index}].amount must be numeric",
                     },
-                    correlation_id,
                 )
                 return
             if amount < 0:
@@ -356,7 +349,6 @@ class ScoringRequestHandler(BaseHTTPRequestHandler):
                         "errorCode": "INVALID_AMOUNT",
                         "error": f"records[{index}].amount must be non-negative",
                     },
-                    correlation_id,
                 )
                 return
             normalized_records.append({"customerId": customer_id, "amount": amount})
@@ -402,7 +394,6 @@ class ScoringRequestHandler(BaseHTTPRequestHandler):
                 "totalRecords": len(output_rows),
                 "correlationId": correlation_id,
             },
-            correlation_id,
         )
 
     @staticmethod
