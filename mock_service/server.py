@@ -2,6 +2,7 @@
 
 import json
 import os
+import re
 import sqlite3
 import sys
 import threading
@@ -20,6 +21,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_DB_PATH = PROJECT_ROOT / "data" / "scoring.db"
 DEFAULT_LOG_FILE = PROJECT_ROOT / "logs" / "astrascore_qa.log"
 CORRELATION_ID_HEADER = "X-Correlation-ID"
+CORRELATION_ID_PATTERN = re.compile(r"^[A-Za-z0-9._:-]{1,128}$")
 
 
 def _strip_namespace(tag: str) -> str:
@@ -79,6 +81,16 @@ def _connect(db_path: Path) -> sqlite3.Connection:
     return connection
 
 
+def _new_correlation_id() -> str:
+    return f"mock-{uuid4().hex[:12]}"
+
+
+def _valid_correlation_id(value: str | None) -> str | None:
+    if value and CORRELATION_ID_PATTERN.fullmatch(value):
+        return value
+    return None
+
+
 class ScoringRequestHandler(BaseHTTPRequestHandler):
     server_version = "AstraScoreQAMock/2.1"
 
@@ -107,7 +119,7 @@ class ScoringRequestHandler(BaseHTTPRequestHandler):
         return self.rfile.read(content_length)
 
     def _correlation_id(self) -> str:
-        return self.headers.get(CORRELATION_ID_HEADER) or f"mock-{uuid4().hex[:12]}"
+        return _valid_correlation_id(self.headers.get(CORRELATION_ID_HEADER)) or _new_correlation_id()
 
     @property
     def db_path(self) -> Path:
@@ -466,4 +478,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
