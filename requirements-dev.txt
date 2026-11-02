@@ -1,6 +1,6 @@
 -r requirements.txt
 
-pytest==9.1.1
+pytest==9.2.0
 pytest-html==4.2.0
 ruff==0.16.1
 bandit[toml]==1.9.4
